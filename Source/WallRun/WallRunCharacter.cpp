@@ -10,7 +10,7 @@
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "MotionControllerComponent.h"
-#include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
+#include "GameFramework/CharacterMovementComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -69,6 +69,8 @@ void AWallRunCharacter::BeginPlay()
 	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
 
 	Mesh1P->SetHiddenInGame(false, true);
+
+	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &AWallRunCharacter::OnPlayerCapsuleHit);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -97,6 +99,38 @@ void AWallRunCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 	PlayerInputComponent->BindAxis("TurnRate", this, &AWallRunCharacter::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AWallRunCharacter::LookUpAtRate);
+}
+
+void AWallRunCharacter::OnPlayerCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	FVector HitNormal = Hit.ImpactNormal;
+
+	if (IsSurfaceWallRunnable(HitNormal))
+	{
+		return;
+	}
+
+	EWallRunSide WallRunSide = EWallRunSide::None;
+
+	if (FVector::DotProduct(HitNormal, GetActorRightVector()) > -0.001f)
+	{
+		WallRunSide = EWallRunSide::Left;
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Capsule hit! Left side."));
+	}
+	else
+	{
+		WallRunSide = EWallRunSide::Right;
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Blue, TEXT("Capsule hit! Right side."));
+	}
+}
+
+bool AWallRunCharacter::IsSurfaceWallRunnable(const FVector& WallNormal)
+{
+	if (WallNormal.Z > GetCharacterMovement()->GetWalkableFloorZ() || WallNormal.Z < -0.001f)
+	{
+		return true;
+	}
+	return false;
 }
 
 void AWallRunCharacter::OnFire()
