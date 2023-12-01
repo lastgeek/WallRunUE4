@@ -14,6 +14,14 @@ class UMotionControllerComponent;
 class UAnimMontage;
 class USoundBase;
 
+UENUM()
+enum class EWallRunSide : uint8
+{
+	None,
+	Left,
+	Right
+};
+
 UCLASS(config=Game)
 class AWallRunCharacter : public ACharacter
 {
@@ -99,6 +107,12 @@ public:
 	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+private:
+	UFUNCTION()
+	void OnPlayerCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	bool IsSurfaceWallRunnable(const FVector& WallNormal);
 
 };
 
