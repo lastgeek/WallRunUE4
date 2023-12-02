@@ -96,6 +96,9 @@ protected:
 	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
 	 */
 	void LookUpAtRate(float Rate);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (UIMin = 0.0f, ClampMin = 0.0f))
+	float MaxWallRunTime = 1.0f;
 	
 protected:
 	// APawn interface
@@ -113,6 +116,21 @@ private:
 	void OnPlayerCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 	bool IsSurfaceWallRunnable(const FVector& WallNormal);
+
+	bool AreRequiredKeyDown(EWallRunSide WallRunSide);
+
+	float ForwardAxis = 0.0f;
+	float RightAxis = 0.0f;
+
+	void StartWallRun(EWallRunSide WallRunSide, FVector Direction);
+	void StopWallRun();
+	void UpdateWallRun();
+
+	bool bIsWallRunning = false;
+	EWallRunSide CurrentWallRunSide = EWallRunSide::None;
+	FVector CurrentDirection = FVector::ZeroVector;
+
+	FTimerHandle WallRunTimerHandle;
 
 };
 
