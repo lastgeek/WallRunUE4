@@ -75,6 +75,16 @@ void AWallRunCharacter::BeginPlay()
 	GetCharacterMovement()->SetPlaneConstraintEnabled(true);
 }
 
+void AWallRunCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (bIsWallRunning)
+	{
+		UpdateWallRun();
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -103,6 +113,20 @@ void AWallRunCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AWallRunCharacter::LookUpAtRate);
 }
 
+void AWallRunCharacter::GetWallRunSideAndDirection(const FVector& HitNormal, EWallRunSide& OutWallRunSide, FVector& OutDirection) const
+{
+	if (FVector::DotProduct(HitNormal, GetActorRightVector()) > -0.001f)
+	{
+		OutWallRunSide = EWallRunSide::Left;
+		OutDirection = FVector::CrossProduct(HitNormal, FVector::UpVector).GetSafeNormal();
+	}
+	else
+	{
+		OutWallRunSide = EWallRunSide::Right;
+		OutDirection = FVector::CrossProduct(FVector::UpVector, HitNormal).GetSafeNormal();
+	}
+}
+
 void AWallRunCharacter::OnPlayerCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (bIsWallRunning)
@@ -124,19 +148,7 @@ void AWallRunCharacter::OnPlayerCapsuleHit(UPrimitiveComponent* HitComponent, AA
 
 	EWallRunSide WallRunSide = EWallRunSide::None;
 	FVector Direction = FVector::ZeroVector;
-
-	if (FVector::DotProduct(HitNormal, GetActorRightVector()) > -0.001f)
-	{
-		WallRunSide = EWallRunSide::Left;
-		Direction = FVector::CrossProduct(HitNormal, FVector::UpVector).GetSafeNormal();
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Capsule hit! Left side."));
-	}
-	else
-	{
-		WallRunSide = EWallRunSide::Right;
-		Direction = FVector::CrossProduct(FVector::UpVector, HitNormal).GetSafeNormal();
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Blue, TEXT("Capsule hit! Right side."));
-	}
+	GetWallRunSideAndDirection(HitNormal, WallRunSide, Direction);
 
 	if (!AreRequiredKeyDown(WallRunSide))
 	{
@@ -146,7 +158,7 @@ void AWallRunCharacter::OnPlayerCapsuleHit(UPrimitiveComponent* HitComponent, AA
 	StartWallRun(WallRunSide, Direction);
 }
 
-bool AWallRunCharacter::IsSurfaceWallRunnable(const FVector& WallNormal)
+bool AWallRunCharacter::IsSurfaceWallRunnable(const FVector& WallNormal) const
 {
 	if (WallNormal.Z > GetCharacterMovement()->GetWalkableFloorZ() || WallNormal.Z < 0)
 	{
@@ -155,7 +167,7 @@ bool AWallRunCharacter::IsSurfaceWallRunnable(const FVector& WallNormal)
 	return false;
 }
 
-bool AWallRunCharacter::AreRequiredKeyDown(EWallRunSide WallRunSide)
+bool AWallRunCharacter::AreRequiredKeyDown(EWallRunSide WallRunSide) const
 {
 	if (ForwardAxis < 0.001f)
 	{
@@ -203,6 +215,43 @@ void AWallRunCharacter::StopWallRun()
 
 void AWallRunCharacter::UpdateWallRun()
 {
+	if (!AreRequiredKeyDown(CurrentWallRunSide))
+	{
+		StopWallRun();
+		return;
+	}
+
+	FHitResult HitResult;
+
+	FVector LineTraceDirection = CurrentWallRunSide == EWallRunSide::Right ? GetActorRightVector() : -GetActorRightVector();
+	float LineTraceLength = 200.0f;
+
+	FVector StartPosition = GetActorLocation();
+	FVector EndPosition = StartPosition + LineTraceLength * LineTraceDirection;
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, StartPosition, EndPosition, ECC_Visibility, QueryParams))
+	{
+		EWallRunSide WallRunSide = EWallRunSide::None;
+		FVector Direction = FVector::ZeroVector;
+		GetWallRunSideAndDirection(HitResult.ImpactNormal, WallRunSide, Direction);
+
+		if (WallRunSide != CurrentWallRunSide)
+		{
+			StopWallRun();
+		}
+		else
+		{
+			CurrentDirection = Direction;
+			GetCharacterMovement()->Velocity = GetCharacterMovement()->GetMaxSpeed() * CurrentDirection;
+		}
+	}
+	else
+	{
+		StopWallRun();
+	}
 }
 
 void AWallRunCharacter::OnFire()
