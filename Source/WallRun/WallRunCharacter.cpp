@@ -93,6 +93,32 @@ void AWallRunCharacter::Tick(float DeltaSeconds)
 	CameraTiltTimeline.TickTimeline(DeltaSeconds);
 }
 
+void AWallRunCharacter::Jump()
+{
+	if (bIsWallRunning)
+	{
+		FVector JumpDirection = FVector::ZeroVector;
+
+		if(CurrentWallRunSide == EWallRunSide::Right)
+		{
+			JumpDirection = FVector::CrossProduct(CurrentDirection, FVector::UpVector).GetSafeNormal();
+		}
+		else
+		{
+			JumpDirection = FVector::CrossProduct(FVector::UpVector, CurrentDirection).GetSafeNormal();
+		}
+
+		JumpDirection += FVector::UpVector;
+
+		LaunchCharacter(GetCharacterMovement()->JumpZVelocity * JumpDirection.GetSafeNormal(), false, true);
+		StopWallRun();
+	}
+	else
+	{
+		Super::Jump();
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
 
