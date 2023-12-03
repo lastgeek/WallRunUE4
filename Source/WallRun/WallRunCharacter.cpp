@@ -232,7 +232,6 @@ void AWallRunCharacter::StartWallRun(EWallRunSide WallRunSide, FVector Direction
 
 
 	GetCharacterMovement()->SetPlaneConstraintNormal(FVector::UpVector);
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Wallrun started!"));
 
 	GetWorldTimerManager().SetTimer(WallRunTimerHandle, this, &AWallRunCharacter::StopWallRun, MaxWallRunTime, false);
 }
@@ -244,7 +243,6 @@ void AWallRunCharacter::StopWallRun()
 	bIsWallRunning = false;
 
 	GetCharacterMovement()->SetPlaneConstraintNormal(FVector::ZeroVector);
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Wallrun ended!"));
 }
 
 void AWallRunCharacter::UpdateWallRun()
