@@ -93,6 +93,32 @@ void AWallRunCharacter::Tick(float DeltaSeconds)
 	CameraTiltTimeline.TickTimeline(DeltaSeconds);
 }
 
+void AWallRunCharacter::Jump()
+{
+	if (bIsWallRunning)
+	{
+		FVector JumpDirection = FVector::ZeroVector;
+
+		if(CurrentWallRunSide == EWallRunSide::Right)
+		{
+			JumpDirection = FVector::CrossProduct(CurrentDirection, FVector::UpVector).GetSafeNormal();
+		}
+		else
+		{
+			JumpDirection = FVector::CrossProduct(FVector::UpVector, CurrentDirection).GetSafeNormal();
+		}
+
+		JumpDirection += FVector::UpVector;
+
+		LaunchCharacter(GetCharacterMovement()->JumpZVelocity * JumpDirection.GetSafeNormal(), false, true);
+		StopWallRun();
+	}
+	else
+	{
+		Super::Jump();
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -206,7 +232,6 @@ void AWallRunCharacter::StartWallRun(EWallRunSide WallRunSide, FVector Direction
 
 
 	GetCharacterMovement()->SetPlaneConstraintNormal(FVector::UpVector);
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Wallrun started!"));
 
 	GetWorldTimerManager().SetTimer(WallRunTimerHandle, this, &AWallRunCharacter::StopWallRun, MaxWallRunTime, false);
 }
@@ -218,7 +243,6 @@ void AWallRunCharacter::StopWallRun()
 	bIsWallRunning = false;
 
 	GetCharacterMovement()->SetPlaneConstraintNormal(FVector::ZeroVector);
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Wallrun ended!"));
 }
 
 void AWallRunCharacter::UpdateWallRun()
