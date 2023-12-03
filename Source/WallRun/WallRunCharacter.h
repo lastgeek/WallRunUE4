@@ -49,6 +49,8 @@ public:
 protected:
 	virtual void BeginPlay();
 
+	virtual void Tick(float DeltaSeconds) override;
+
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
@@ -115,9 +117,11 @@ private:
 	UFUNCTION()
 	void OnPlayerCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	bool IsSurfaceWallRunnable(const FVector& WallNormal);
+	void GetWallRunSideAndDirection(const FVector& HitNormal, EWallRunSide& OutWallRunSide, FVector& OutDirection) const;
 
-	bool AreRequiredKeyDown(EWallRunSide WallRunSide);
+	bool IsSurfaceWallRunnable(const FVector& WallNormal) const;
+
+	bool AreRequiredKeyDown(EWallRunSide WallRunSide) const;
 
 	float ForwardAxis = 0.0f;
 	float RightAxis = 0.0f;
